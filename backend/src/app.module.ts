@@ -13,6 +13,9 @@ import { SeatsModule } from './seats/seats.module'
 import { Reservation } from './reservations/entities/reservation.entity'
 import { ReservationsModule } from './reservations/reservations.module'
 import { AiModule } from './ai/ai.module'
+import { NftModule } from './nft/nft.module'
+import { NFTEntity } from './nft/entities/nft.entity'
+import { UserWallet } from './nft/entities/user-wallet.entity'
 
 @Module({
   imports: [
@@ -29,7 +32,7 @@ import { AiModule } from './ai/ai.module'
         username: configService.get<string>('DB_USERNAME', 'root'),
         password: configService.get<string>('DB_PASSWORD', 'root'),
         database: configService.get<string>('DB_DATABASE', 'rainier_training'),
-        entities: [User, StudyRoom, Seat, Reservation],
+        entities: [User, StudyRoom, Seat, Reservation, NFTEntity, UserWallet],
         synchronize: true,
       }),
     }),
@@ -39,6 +42,7 @@ import { AiModule } from './ai/ai.module'
     SeatsModule,
     ReservationsModule,
     AiModule,
+    NftModule,
   ],
   controllers: [AppController],
   providers: [AppService],

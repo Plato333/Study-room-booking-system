@@ -63,6 +63,12 @@ const router = createRouter({
       component: () => import('../views/study-room/AdminReservationsView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/my-nft',
+      name: 'my-nft',
+      component: () => import('../views/nft/MyNFTView.vue'),
+      meta: { requiresAuth: true },
+    },
   ],
 })
 

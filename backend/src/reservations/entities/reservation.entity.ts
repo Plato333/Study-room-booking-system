@@ -59,6 +59,9 @@ export class Reservation {
   @Column({ type: 'datetime', nullable: true, comment: '释放时间' })
   release_time: Date | null;
 
+  @Column({ type: 'boolean', default: false, comment: '是否已触发 NFT 铸造' })
+  nft_minted: boolean;
+
   @CreateDateColumn({ comment: '创建时间' })
   created_at: Date;
 

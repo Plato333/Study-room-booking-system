@@ -25,5 +25,6 @@ export const menuConfig: Record<string, MenuItem[]> = {
     { path: '/home', label: '首页', icon: 'HomeFilled' },
     { path: '/study-rooms/reserve', label: '预约座位', icon: 'Calendar' },
     { path: '/study-rooms/my-reservations', label: '我的预约', icon: 'List' },
+    { path: '/my-nft', label: '我的NFT', icon: 'Present' },
   ],
 }

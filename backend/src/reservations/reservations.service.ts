@@ -3,6 +3,8 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createHmac } from 'crypto';
@@ -11,6 +13,7 @@ import { Seat, SeatStatus } from '../seats/entities/seat.entity';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { QueryReservationDto } from './dto/query-reservation.dto';
 import { Reservation, ReservationStatus } from './entities/reservation.entity';
+import { NftService } from '../nft/nft.service';
 
 const SEAT_CODE_SECRET = 'rainier-study-room-seat-code';
 
@@ -21,6 +24,8 @@ export class ReservationsService {
     private readonly reservationRepository: Repository<Reservation>,
     @InjectRepository(Seat)
     private readonly seatRepository: Repository<Seat>,
+    @Inject(forwardRef(() => NftService))
+    private readonly nftService: NftService,
   ) {}
 
   /** 生成座位签到码（HMAC 签名） */
@@ -88,7 +93,69 @@ export class ReservationsService {
       student_id: studentId,
     } as any);
 
-    return this.reservationRepository.save(reservation);
+    const saved = await this.reservationRepository.save(reservation);
+
+    // ======================
+    // NFT 铸造检测：如果是首次成功预约，触发铸造
+    // ======================
+    const savedReservation = Array.isArray(saved) ? saved[0] : saved;
+    this.tryMintNFT(studentId, seat, savedReservation).catch((err) => {
+      console.error('NFT 铸造失败（非阻塞）:', err.message);
+    });
+
+    return saved;
+  }
+
+  /**
+   * 尝试为用户铸造 NFT（首次预约触发）
+   */
+  private async tryMintNFT(
+    studentId: number,
+    seat: Seat,
+    reservation: Reservation,
+  ) {
+    // 检查本次预约是否已检测过 NFT
+    if (reservation.nft_minted) return;
+
+    // 检查用户是否已有 NFT
+    const existingNft = await this.reservationRepository
+      .createQueryBuilder('r')
+      .leftJoin('nfts', 'n', 'n.user_id = r.student_id')
+      .where('r.student_id = :studentId', { studentId })
+      .andWhere('r.nft_minted = true')
+      .getCount();
+    if (existingNft > 0) return;
+
+    // 获取自习室名称
+    let studyRoomName = '未知自习室';
+    try {
+      const roomRepo = this.reservationRepository.manager.getRepository(
+        'StudyRoom',
+      ) as any;
+      const room = await roomRepo.findOne({
+        where: { id: seat.room_id },
+      });
+      if (room) studyRoomName = room.name;
+    } catch {
+      // ignore
+    }
+
+    // 异步铸造（不阻塞预约响应）
+    this.nftService
+      .mintNFT(studentId, `User#${studentId}`, {
+        studyRoomName,
+        seatNumber: seat.seat_number,
+        reservationDate: reservation.date,
+      })
+      .then(() => {
+        // 标记 NFT 已铸造
+        this.reservationRepository.update(reservation.id, {
+          nft_minted: true,
+        } as any);
+      })
+      .catch((err) => {
+        console.error('NFT 铸造失败:', err.message);
+      });
   }
 
   /** 学生查看我的预约 */
