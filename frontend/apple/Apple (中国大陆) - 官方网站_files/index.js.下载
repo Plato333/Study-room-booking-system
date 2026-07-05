@@ -1,0 +1,7 @@
+(function () {
+    var isWechat = /MicroMessenger/i.test(navigator.userAgent);
+    if (isWechat) {
+        document.documentElement.classList.remove('enhanced');
+        document.documentElement.classList.add('no-wechat-inline-media', 'no-reduced-motion', 'no-enhanced');
+    }
+})();

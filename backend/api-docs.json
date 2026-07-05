@@ -1,0 +1,568 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "自习室预约系统 API",
+    "version": "1.0.0",
+    "description": "基于 NestJS + Vue 3 的自习室预约系统后端接口"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "本地开发环境"
+    }
+  ],
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "tags": ["01-认证管理"],
+        "summary": "用户登录",
+        "description": "使用用户名和密码登录，返回 JWT Token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": { "type": "string", "example": "admin", "description": "用户名" },
+                  "password": { "type": "string", "example": "123456", "description": "密码" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "登录成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": { "type": "string", "example": "eyJhbGciOiJIUzI1NiIs..." },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "integer" },
+                        "username": { "type": "string" },
+                        "role": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "用户名或密码错误" }
+        }
+      }
+    },
+    "/api/auth/profile": {
+      "get": {
+        "tags": ["01-认证管理"],
+        "summary": "获取当前用户信息",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "integer" },
+                    "username": { "type": "string" },
+                    "role": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/register": {
+      "post": {
+        "tags": ["01-认证管理"],
+        "summary": "用户注册",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": { "type": "string", "example": "student1", "description": "用户名，3-20 字符" },
+                  "password": { "type": "string", "example": "123456", "description": "密码，6-50 字符" },
+                  "role": { "type": "string", "enum": ["admin", "student"], "example": "student", "description": "角色，默认 student" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "注册成功" },
+          "409": { "description": "用户名已存在" }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "tags": ["01-认证管理"],
+        "summary": "用户列表（分页）",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10 } },
+          { "name": "search", "in": "query", "schema": { "type": "string" }, "description": "按用户名搜索" }
+        ],
+        "responses": { "200": { "description": "返回分页用户列表" } }
+      }
+    },
+    "/api/users/{id}": {
+      "get": {
+        "tags": ["01-认证管理"],
+        "summary": "用户详情",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "用户信息" } }
+      },
+      "put": {
+        "tags": ["01-认证管理"],
+        "summary": "更新用户",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": { "type": "string" },
+                  "password": { "type": "string" },
+                  "role": { "type": "string", "enum": ["admin", "student"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "更新成功" } }
+      },
+      "delete": {
+        "tags": ["01-认证管理"],
+        "summary": "删除用户",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "删除成功" } }
+      }
+    },
+    "/api/study-rooms": {
+      "get": {
+        "tags": ["02-自习室管理"],
+        "summary": "自习室列表（分页）",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10 } },
+          { "name": "search", "in": "query", "schema": { "type": "string" }, "description": "按名称搜索" }
+        ],
+        "responses": { "200": { "description": "分页自习室列表" } }
+      },
+      "post": {
+        "tags": ["02-自习室管理"],
+        "summary": "创建自习室",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "location", "open_time", "close_time"],
+                "properties": {
+                  "name": { "type": "string", "example": "001自习室" },
+                  "location": { "type": "string", "example": "图书馆3楼" },
+                  "open_time": { "type": "string", "example": "08:00" },
+                  "close_time": { "type": "string", "example": "22:00" },
+                  "status": { "type": "string", "enum": ["open", "closed"], "default": "open" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "创建成功" } }
+      }
+    },
+    "/api/study-rooms/open": {
+      "get": {
+        "tags": ["02-自习室管理"],
+        "summary": "所有开放中的自习室",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "开放自习室数组" } }
+      }
+    },
+    "/api/study-rooms/{id}": {
+      "get": {
+        "tags": ["02-自习室管理"],
+        "summary": "自习室详情",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "自习室信息" } }
+      },
+      "put": {
+        "tags": ["02-自习室管理"],
+        "summary": "更新自习室",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "location": { "type": "string" },
+                  "open_time": { "type": "string" },
+                  "close_time": { "type": "string" },
+                  "status": { "type": "string", "enum": ["open", "closed"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "更新成功" } }
+      },
+      "delete": {
+        "tags": ["02-自习室管理"],
+        "summary": "删除自习室（级联删除座位）",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "删除成功" } }
+      }
+    },
+    "/api/study-rooms/{roomId}/seats": {
+      "get": {
+        "tags": ["03-座位管理"],
+        "summary": "座位列表（按自习室）",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "roomId", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
+        ],
+        "responses": { "200": { "description": "分页座位列表" } }
+      },
+      "post": {
+        "tags": ["03-座位管理"],
+        "summary": "创建单个座位",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "roomId", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["seat_number"],
+                "properties": {
+                  "seat_number": { "type": "string", "example": "A-01" },
+                  "status": { "type": "string", "enum": ["available", "occupied", "maintenance"], "default": "available" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "创建成功" } }
+      }
+    },
+    "/api/study-rooms/{roomId}/seats/batch": {
+      "post": {
+        "tags": ["03-座位管理"],
+        "summary": "批量创建座位",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "roomId", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["seat_numbers"],
+                "properties": {
+                  "seat_numbers": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "example": ["A-01", "A-02", "A-03"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "批量创建成功" } }
+      }
+    },
+    "/api/seats/{id}": {
+      "put": {
+        "tags": ["03-座位管理"],
+        "summary": "更新座位",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "seat_number": { "type": "string" },
+                  "room_id": { "type": "integer" },
+                  "status": { "type": "string", "enum": ["available", "occupied", "maintenance"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "更新成功" } }
+      },
+      "delete": {
+        "tags": ["03-座位管理"],
+        "summary": "删除座位",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "删除成功" } }
+      }
+    },
+    "/api/seats/available": {
+      "get": {
+        "tags": ["04-预约管理"],
+        "summary": "查询空闲座位（学生）",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "date", "in": "query", "required": true, "schema": { "type": "string", "example": "2026-07-03" }, "description": "日期" },
+          { "name": "start_time", "in": "query", "required": true, "schema": { "type": "string", "example": "08:00" }, "description": "开始时间" },
+          { "name": "end_time", "in": "query", "required": true, "schema": { "type": "string", "example": "10:00" }, "description": "结束时间" },
+          { "name": "room_id", "in": "query", "schema": { "type": "integer" }, "description": "自习室ID（可选）" }
+        ],
+        "responses": { "200": { "description": "空闲座位列表" } }
+      }
+    },
+    "/api/seats/{seatId}/seat-code": {
+      "get": {
+        "tags": ["03-座位管理"],
+        "summary": "获取座位签到码",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "seatId", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "200": {
+            "description": "签到码",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "string", "example": "1:abc12345" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/seats/{seatId}/qrcode": {
+      "get": {
+        "tags": ["03-座位管理"],
+        "summary": "获取座位二维码图片（公开）",
+        "parameters": [{ "name": "seatId", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "200": {
+            "description": "PNG 二维码图片",
+            "content": { "image/png": {} }
+          }
+        }
+      }
+    },
+    "/api/reservations": {
+      "post": {
+        "tags": ["04-预约管理"],
+        "summary": "创建预约（学生）",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["seat_id", "date", "start_time", "end_time"],
+                "properties": {
+                  "seat_id": { "type": "integer", "example": 1 },
+                  "date": { "type": "string", "example": "2026-07-03" },
+                  "start_time": { "type": "string", "example": "08:00" },
+                  "end_time": { "type": "string", "example": "10:00" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "预约成功" },
+          "400": { "description": "时段冲突或其他错误" }
+        }
+      },
+      "get": {
+        "tags": ["04-预约管理"],
+        "summary": "全部预约列表（管理员）",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["reserved", "checked_in", "completed", "cancelled"] } },
+          { "name": "date", "in": "query", "schema": { "type": "string" } },
+          { "name": "room_id", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "分页预约列表" } }
+      }
+    },
+    "/api/reservations/my": {
+      "get": {
+        "tags": ["04-预约管理"],
+        "summary": "我的预约列表（学生）",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["reserved", "checked_in", "completed", "cancelled"] } },
+          { "name": "date", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "分页预约列表" } }
+      }
+    },
+    "/api/reservations/{id}": {
+      "delete": {
+        "tags": ["04-预约管理"],
+        "summary": "取消预约（学生）",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "取消成功" } }
+      }
+    },
+    "/api/reservations/{id}/check-in": {
+      "post": {
+        "tags": ["05-签到与释放"],
+        "summary": "签到（学生）",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["seat_code"],
+                "properties": {
+                  "seat_code": { "type": "string", "example": "1:abc12345", "description": "从二维码或签到码弹窗获取" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "签到成功" } }
+      }
+    },
+    "/api/reservations/{id}/release": {
+      "post": {
+        "tags": ["05-签到与释放"],
+        "summary": "释放座位（学生）",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "释放成功，座位恢复空闲" } }
+      }
+    },
+    "/api/reservations/stats": {
+      "get": {
+        "tags": ["06-数据统计"],
+        "summary": "统计数据（管理员）",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "统计数据",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "totalSeats": { "type": "integer" },
+                    "availableSeats": { "type": "integer" },
+                    "occupiedSeats": { "type": "integer" },
+                    "usageRate": { "type": "integer" },
+                    "todayReservations": { "type": "integer" },
+                    "todayCheckedIn": { "type": "integer" },
+                    "checkinRate": { "type": "integer" },
+                    "recentDaily": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "date": { "type": "string" },
+                          "count": { "type": "integer" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/chat": {
+      "post": {
+        "tags": ["07-AI 助手"],
+        "summary": "AI 对话",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["message"],
+                "properties": {
+                  "message": { "type": "string", "example": "今天还有空位吗？", "description": "用户问题，最大 500 字符" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "AI 回复",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "reply": { "type": "string", "example": "✅ 2026-07-03 08:00-10:00 空闲座位..." }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "登录后获取的 JWT Token，格式：Bearer &lt;token&gt;"
+      }
+    }
+  }
+}
